@@ -120,7 +120,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 202.58.44.241/32
+          CidrIp: 220.245.215.78/32
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80

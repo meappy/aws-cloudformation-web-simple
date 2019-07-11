@@ -1,11 +1,11 @@
 # Simple AWS CloudFormation Template
 
-Simple AWS CloudFormation Template proof of concept/non-production use
+Simple AWS CloudFormation Template for proof of concept/non-production use
 
 ## Quick and dirty start up
 1. Clone this repo
 
-2. Modify params to quit 
+2. Modify params to suit
 ```
 $ grep ParamVpcStackName params/launch-web.json 
   { "ParameterKey": "ParamVpcStackName",      "ParameterValue": "simple-web-v11" },
