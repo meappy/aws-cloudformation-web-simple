@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Simple Web
+
+Parameters:
+  ParamStackName:
+    Type: String
+
+  ParamNotificationEmail:
+    Type: String
+
+  ParamVpcStackName:
+    Type: String
+
+  ParamVpcCidr:
+    Type: String
+
+  ParamSubnetWeb:
+    Type: String
+
+  ParamAccessKey:
+    Type: String
+
+  ParamEC2Tag:
+    Type: String
+
+  ParamImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-e2021d81
+
+  ParamInstanceType:
+    Type: String
+    Default: t2.nano
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: ParamVpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: StackName
+          Value:
+            Ref: ParamStackName
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: VPC
+
+  RouteTableNET:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+
+  RouteTableNAT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+
+  RouteNET:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: RouteTableNET
+
+  RouteTableAssociationWeb:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: RouteTableNET
+      SubnetId:
+        Ref: SubnetWeb
+
+  SubnetWeb:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock:
+        Ref: ParamSubnetWeb
+      MapPublicIpOnLaunch: true
+      VpcId:
+       Ref: VPC
+
+  SecurityGroupWeb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: web
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: !Ref ParamVpcCidr
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref ParamVpcCidr
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 101.166.140.132/32
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 202.58.44.241/32
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId:
+        Ref: VPC
+
+  InstanceWeb:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: ParamImageId
+      InstanceType:
+        Ref: ParamInstanceType
+      KeyName:
+        Ref: ParamAccessKey
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId:
+            !Ref SubnetWeb
+          GroupSet:
+            - !Ref SecurityGroupWeb
+      UserData:
+        "Fn::Base64": !Sub |
+          #cloud-config
+          package_upgrade: true
+          packages:
+            - awscli
+          users:
+            - default
+          write_files:
+              - path: /root/.aws/config
+                owner: 'root:root'
+                permissions: '0600'
+                content: |
+                  [default]
+                  region = ap-southeast-2
+              - path: /root/.aws/credentials
+                owner: 'root:root'
+                permissions: '0600'
+                content: |
+                  [default]
+                  aws_access_key_id = 
+                  aws_secret_access_key = 
+          runcmd:
+            - [ mkdir, -p, /opt/web/deploy ]
+            - [ aws, s3, cp, 's3://simple-web-deploy/sysad.mn/wordpress-nginx-docker/deploy.sh', /opt/web/deploy/ ]
+            - [ chmod, go-x, /opt/web/deploy ]
+            - [ chmod, ug+x, /opt/web/deploy/deploy.sh ]
+            - [ /opt/web/deploy/deploy.sh ]
+            - [ touch, /root/built ]
+          users:
+            - default
+          power_state:
+            delay: "+1"
+            mode: reboot
+      Tags:
+        - Key: StackName
+          Value: ParamStackName
+        - Key: Name
+          Value:
+            Ref: ParamEC2Tag
+    DependsOn:
+      - VPCGatewayAttachment
+      - SecurityGroupWeb
+      - SubnetWeb
+
+Outputs:
+  OutputVPC:
+    Value: !Ref VPC
+    Export:
+      Name: !Join [ ":", [ !Ref "AWS::StackName", VPC ] ]
+
+  OutputSubnetWeb:
+    Value: !Ref SubnetWeb
+    Export:
+      Name: !Join [ ":", [ !Ref "AWS::StackName", SubnetWeb ] ]
+
+  OutputSecurityGroupWeb:
+    Value: !Ref SecurityGroupWeb
+    Export:
+      Name: !Join [ ":", [ !Ref "AWS::StackName", SecurityGroupWeb ] ]
+
+  OutputInstancePublicIpWeb:
+    Description: Public address of bastion host of current VPC
+    Value: !GetAtt InstanceWeb.PublicIp
+    Export:
+      Name: !Join [ ":", [ !Ref ParamVpcStackName, OutputInstancePublicIpWeb ] ]
+
+# vim:syntax=yaml tabstop=2 expandtab nowrap:

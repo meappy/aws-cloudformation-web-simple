@@ -1,0 +1,11 @@
+[
+  { "ParameterKey": "ParamStackName",         "ParameterValue": "Simple-Web" },
+  { "ParameterKey": "ParamNotificationEmail", "ParameterValue": "g@sim.mn" },
+  { "ParameterKey": "ParamVpcStackName",      "ParameterValue": "simple-web-v11" },
+  { "ParameterKey": "ParamVpcCidr",           "ParameterValue": "172.16.0.0/16" },
+  { "ParameterKey": "ParamSubnetWeb",         "ParameterValue": "172.16.0.0/24" },
+  { "ParameterKey": "ParamAccessKey",         "ParameterValue": "id_rsa-aws" },
+  { "ParameterKey": "ParamEC2Tag",            "ParameterValue": "sysad.mn" },
+  { "ParameterKey": "ParamImageId",           "ParameterValue": "ami-07a3bd4944eb120a0" },
+  { "ParameterKey": "ParamInstanceType",      "ParameterValue": "t2.micro" }
+]
