@@ -31,7 +31,7 @@ Host *
  StrictHostKeyChecking no
 
 Host 172.*
- IdentityFile ~/.ssh/tfe-hostworks-ec2.key
+ IdentityFile ~/.ssh/ec2.key
 EOF
 cat > ~ubuntu/.ssh/ec2.key << EOF
 -----BEGIN RSA PRIVATE KEY-----
